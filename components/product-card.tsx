@@ -7,7 +7,6 @@ import { Star, ExternalLink, Eye, ShoppingCart } from "lucide-react";
 import { Product } from "@/lib/products";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -16,8 +15,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -32,11 +29,7 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
 
   return (
     <Link href={`/products/${product.id}`} className="block">
-      <Card 
-        className="group relative overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
+      <Card className="group relative overflow-hidden transition-all hover:shadow-xl duration-300">
         {/* Badges */}
         <div className="absolute left-3 top-3 z-20 flex flex-col gap-2">
           {/* Sale Badge */}
@@ -61,12 +54,12 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="absolute right-3 top-3 z-20 flex flex-col gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        {/* Quick Actions - Using CSS group-hover instead of React state */}
+        <div className="absolute right-3 top-3 z-20 flex flex-col gap-2 opacity-0 transition-all duration-300 group-hover:opacity-100">
           <Button
             variant="secondary"
             size="icon"
-            className="h-9 w-9 rounded-full shadow-lg"
+            className="h-9 w-9 rounded-full shadow-lg scale-90 group-hover:scale-100"
             onClick={handleQuickView}
             title="Quick View"
           >
@@ -75,7 +68,7 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
           <Button
             variant="default"
             size="icon"
-            className="h-9 w-9 rounded-full shadow-lg"
+            className="h-9 w-9 rounded-full shadow-lg scale-90 group-hover:scale-100"
             onClick={handleAddToCart}
             disabled={!product.inStock}
             title="Add to Cart"
@@ -86,6 +79,7 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
 
         {/* Product Image */}
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+          {/* Main Image */}
           <Image
             src={product.images[0]}
             alt={product.name}
@@ -247,4 +241,4 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
       </Card>
     </Link>
   );
-}
+} 
