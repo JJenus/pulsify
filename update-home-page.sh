@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# Update the home page to use QuickViewModal
+cat > app/page.tsx << 'PAGE_EOF'
 "use client";
 
 import { useState } from "react";
@@ -108,3 +112,6 @@ export default function Home() {
     </div>
   );
 }
+PAGE_EOF
+
+echo "Updated app/page.tsx with QuickViewModal"

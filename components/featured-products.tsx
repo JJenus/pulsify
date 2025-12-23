@@ -6,6 +6,8 @@ import { demoProducts } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function FeaturedProducts() {
   const { toast } = useToast();
@@ -22,46 +24,65 @@ export function FeaturedProducts() {
     toast({
       title: "Quick View",
       description: `Viewing ${product.name}`,
+      action: (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.location.href = `/products/${product.id}`}
+        >
+          View Details
+        </Button>
+      ),
     });
   };
 
-  const categories = ["all", "clothing", "electronics", "accessories"];
+  const categories = ["all", "clothing", "electronics", "accessories", "home"];
 
   // Filter products based on active category
   const filteredProducts = activeCategory === "all" 
     ? demoProducts 
     : demoProducts.filter(product => 
-        product.category.toLowerCase() === activeCategory.toLowerCase()
+        product.category.toLowerCase().includes(activeCategory.toLowerCase())
       );
 
   return (
-    <section className="py-12">
+    <section className="py-16">
       <div className="container mx-auto px-4">
-        <div className="mb-8 flex flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="mb-10 flex flex-col items-center justify-between gap-6 md:flex-row">
           <div>
-            <h2 className="text-3xl font-bold">Featured Products</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-3xl font-bold md:text-4xl">Featured Products</h2>
+            <p className="mt-2 text-lg text-muted-foreground">
               Discover our most popular items
             </p>
           </div>
           
-          <Tabs defaultValue="all" className="w-full md:w-auto">
-            <TabsList>
-              {categories.map((category) => (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  onClick={() => setActiveCategory(category)}
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-4">
+            <Tabs defaultValue="all" className="w-full md:w-auto">
+              <TabsList className="grid grid-cols-3 md:flex">
+                {categories.slice(0, 3).map((category) => (
+                  <TabsTrigger
+                    key={category}
+                    value={category}
+                    onClick={() => setActiveCategory(category)}
+                    className="capitalize"
+                  >
+                    {category === "all" ? "All" : category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            
+            <Link href="/products">
+              <Button variant="outline" className="gap-2">
+                View All
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredProducts.map((product) => (
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredProducts.slice(0, 8).map((product) => (
             <ProductCard
               key={product.id}
               product={product}
@@ -71,10 +92,13 @@ export function FeaturedProducts() {
           ))}
         </div>
         
-        <div className="mt-8 text-center">
-          <Button variant="outline" size="lg">
-            View All Products
-          </Button>
+        <div className="mt-12 text-center">
+          <Link href="/products">
+            <Button size="lg" className="gap-2">
+              Browse All Products
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
