@@ -64,7 +64,7 @@ export default function PrivacyPage() {
 
         <div className="mb-8 p-6 bg-muted rounded-lg">
           <p className="mb-4">
-            This Privacy Policy describes how ShopPro ("we," "us," or "our") collects, uses, 
+            This Privacy Policy describes how Pulsify ("we," "us," or "our") collects, uses, 
             and shares your personal information when you use our website and services.
           </p>
           <p>
@@ -92,8 +92,8 @@ export default function PrivacyPage() {
             If you have questions about this Privacy Policy or our data practices, please contact us:
           </p>
           <div className="space-y-2">
-            <p><strong>Email:</strong> privacy@shoppro.com</p>
-            <p><strong>Mail:</strong> ShopPro Privacy Team, 123 Commerce St, New York, NY 10001</p>
+            <p><strong>Email:</strong> privacy@pulsify.com</p>
+            <p><strong>Mail:</strong> Pulsify Privacy Team, 123 Commerce St, New York, NY 10001</p>
             <p><strong>Phone:</strong> 1-800-SHOPPRO (ext. 2 for privacy inquiries)</p>
           </div>
         </div>

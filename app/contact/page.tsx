@@ -48,7 +48,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-bold">Email</h3>
-                  <p className="text-sm text-muted-foreground">support@shoppro.com</p>
+                  <p className="text-sm text-muted-foreground">support@pulsify.com</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">

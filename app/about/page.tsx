@@ -2,13 +2,13 @@ export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-6">About ShopPro</h1>
+        <h1 className="text-4xl font-bold mb-6">About Pulsify</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <div>
             <h2 className="text-2xl font-bold mb-4">Our Story</h2>
             <p className="text-muted-foreground mb-4">
-              Founded in 2023, ShopPro started with a simple mission: to bring premium products 
+              Founded in 2023, Pulsify started with a simple mission: to bring premium products 
               directly to consumers without the premium markup. What began as a small online store 
               has grown into a trusted destination for quality goods across multiple categories.
             </p>

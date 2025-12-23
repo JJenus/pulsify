@@ -9,7 +9,7 @@ import Link from 'next/link';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ShopPro - Modern E-commerce Store',
+  title: 'Pulsify - Modern E-commerce Store',
   description: 'A modern e-commerce store built with Next.js and shadcn/ui',
 };
 
@@ -39,7 +39,7 @@ export default function RootLayout({
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
               <div>
-                <h3 className="mb-4 text-lg font-bold">ShopPro</h3>
+                <h3 className="mb-4 text-lg font-bold">Pulsify</h3>
                 <p className="text-sm text-muted-foreground">
                   Your one-stop shop for premium products and exceptional service.
                 </p>
@@ -80,7 +80,7 @@ export default function RootLayout({
             </div>
             
             <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-              <p>&copy; {new Date().getFullYear()} ShopPro. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Pulsify. All rights reserved.</p>
             </div>
           </div>
         </footer>

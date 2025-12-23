@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Products - ShopPro',
+  title: 'Products - Pulsify',
   description: 'Browse our collection of premium products',
 };
 

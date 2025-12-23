@@ -51,7 +51,7 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] sm:w-[400px]">
               <SheetHeader>
-                <SheetTitle>ShopPro Menu</SheetTitle>
+                <SheetTitle>Pulsify Menu</SheetTitle>
               </SheetHeader>
               {/* Mobile Navigation */}
                   <nav className="mt-6 flex flex-col space-y-6">
@@ -127,7 +127,7 @@ export function Header() {
           </Sheet>
           
           <Link href="/" className="text-2xl font-bold hover:opacity-80">
-            ShopPro
+            Pulsify
           </Link>
         </div>
         
