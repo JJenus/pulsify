@@ -5,51 +5,80 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Trash2, Plus, Minus, Truck, Shield } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, Truck, Shield, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-  category: string;
-}
+import { useCartStore } from "@/store/cart-store";
+import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 export function CartDrawer() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { id: "1", name: "Premium Cotton T-Shirt", price: 29.99, quantity: 2, image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&auto=format&fit=crop", category: "Clothing" },
-    { id: "2", name: "Designer Denim Jeans", price: 89.99, quantity: 1, image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&auto=format&fit=crop", category: "Clothing" },
-    { id: "3", name: "Wireless Headphones", price: 199.99, quantity: 1, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop", category: "Electronics" },
-    { id: "4", name: "Leather Backpack", price: 129.99, quantity: 1, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&auto=format&fit=crop", category: "Accessories" },
-  ]);
+  const { toast } = useToast();
+  const { 
+    items, 
+    removeItem, 
+    updateQuantity, 
+    clearCart, 
+    getItemCount, 
+    getTotalPrice 
+  } = useCartStore();
+  
+  const [isOpen, setIsOpen] = useState(false);
 
-  const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = getItemCount();
+  const total = getTotalPrice();
   const shippingCost = total >= 50 ? 0 : 4.99;
   const tax = total * 0.08;
 
-  const updateQuantity = (id: string, delta: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
+  const handleUpdateQuantity = (id: string, delta: number) => {
+    const item = items.find(item => item.id === id);
+    if (item) {
+      const newQuantity = item.quantity + delta;
+      if (newQuantity < 1) {
+        removeItem(id);
+        toast({
+          title: "Removed from cart",
+          description: `${item.name} has been removed from your cart`,
+        });
+      } else {
+        updateQuantity(id, newQuantity);
+        toast({
+          title: "Cart updated",
+          description: `${item.name} quantity updated to ${newQuantity}`,
+        });
+      }
+    }
   };
 
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const handleRemoveItem = (id: string) => {
+    const item = items.find(item => item.id === id);
+    if (item) {
+      removeItem(id);
+      toast({
+        title: "Removed from cart",
+        description: `${item.name} has been removed from your cart`,
+      });
+    }
   };
 
-  const clearCart = () => {
-    setCartItems([]);
+  const handleClearCart = () => {
+    clearCart();
+    toast({
+      title: "Cart cleared",
+      description: "All items have been removed from your cart",
+    });
+  };
+
+  const handleProceedToCheckout = () => {
+    // TODO: Implement checkout flow
+    toast({
+      title: "Proceeding to checkout",
+      description: "Redirecting to checkout...",
+    });
+    setIsOpen(false);
   };
 
   return (
-    <Drawer>
+    <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
@@ -72,11 +101,11 @@ export function CartDrawer() {
                 </p>
               </div>
             </div>
-            {cartItems.length > 0 && (
+            {items.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearCart}
+                onClick={handleClearCart}
                 className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50"
               >
                 Clear All
@@ -86,21 +115,21 @@ export function CartDrawer() {
           
           {/* Cart Items with proper scrolling */}
           <div className="flex-1 overflow-hidden min-h-0">
-            {cartItems.length === 0 ? (
+            {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-6 text-center">
                 <ShoppingCart className="mb-4 h-16 w-16 text-muted-foreground/50" />
                 <h3 className="mb-2 text-lg font-semibold">Your cart is empty</h3>
                 <p className="mb-6 text-sm text-muted-foreground">
                   Add some items to get started
                 </p>
-                <Button asChild>
-                  <a href="/products">Browse Products</a>
+                <Button asChild onClick={() => setIsOpen(false)}>
+                  <Link href="/products">Browse Products</Link>
                 </Button>
               </div>
             ) : (
               <ScrollArea className="h-full px-6">
                 <div className="py-6 space-y-4">
-                  {cartItems.map((item) => (
+                  {items.map((item) => (
                     <div key={item.id} className="flex gap-4 rounded-lg border p-4">
                       <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
                         <img
@@ -116,14 +145,27 @@ export function CartDrawer() {
                             <Badge variant="outline" className="mb-1 text-xs">
                               {item.category}
                             </Badge>
-                            <h4 className="truncate font-medium">{item.name}</h4>
+                            <Link 
+                              href={`/products/${item.productHandle || item.productId}`}
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <h4 className="truncate font-medium hover:text-primary transition-colors">
+                                {item.name}
+                              </h4>
+                            </Link>
+                            {item.variant && (
+                              <p className="text-sm text-muted-foreground">
+                                {item.variant.size && `Size: ${item.variant.size}`}
+                                {item.variant.color && `${item.variant.size ? ', ' : ''}Color: ${item.variant.color}`}
+                              </p>
+                            )}
                             <p className="text-lg font-bold">${item.price.toFixed(2)}</p>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-red-500"
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => handleRemoveItem(item.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -135,7 +177,7 @@ export function CartDrawer() {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, -1)}
+                              onClick={() => handleUpdateQuantity(item.id, -1)}
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="h-3 w-3" />
@@ -147,7 +189,7 @@ export function CartDrawer() {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, 1)}
+                              onClick={() => handleUpdateQuantity(item.id, 1)}
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
@@ -166,7 +208,7 @@ export function CartDrawer() {
           </div>
           
           {/* Summary - Fixed at bottom */}
-          {cartItems.length > 0 && (
+          {items.length > 0 && (
             <div className="border-t bg-background/95 backdrop-blur shrink-0">
               <div className="p-6">
                 <div className="mb-6 space-y-3">
@@ -208,11 +250,21 @@ export function CartDrawer() {
                 </div>
                 
                 <div className="grid gap-3">
-                  <Button className="w-full" size="lg">
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={handleProceedToCheckout}
+                  >
                     Proceed to Checkout
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="/products">Continue Shopping</a>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    asChild
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Link href="/products">Continue Shopping</Link>
                   </Button>
                 </div>
                 

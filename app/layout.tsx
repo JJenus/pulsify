@@ -1,10 +1,11 @@
 import './globals.css';
-
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/header';
 import Link from 'next/link';
+import { CategoriesFooter } from '@/components/categories-footer';
+import { CategoryProvider } from '@/components/category-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,23 +19,17 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const categories = [
-    { name: 'Clothing', href: '/products?category=clothing' },
-    { name: 'Electronics', href: '/products?category=electronics' },
-    { name: 'Accessories', href: '/products?category=accessories' },
-    { name: 'Home Goods', href: '/products?category=home' },
-  ];
-
   return (
     <html lang="en">
       <body className={inter.className}>
+
         <Header />
         
         <main className="flex-1">
           {children}
         </main>
         
-        {/* Footer - Keep as server component */}
+        {/* Footer */}
         <footer className="border-t py-12">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
@@ -55,18 +50,8 @@ export default function RootLayout({
                 </ul>
               </div>
               
-              <div>
-                <h4 className="mb-4 font-semibold">Categories</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  {categories.map((category) => (
-                    <li key={category.name}>
-                      <Link href={category.href} className="hover:text-primary">
-                        {category.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Dynamic Categories Section */}
+              <CategoriesFooter />
               
               <div>
                 <h4 className="mb-4 font-semibold">Support</h4>
