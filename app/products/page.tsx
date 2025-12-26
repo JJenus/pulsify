@@ -6,10 +6,12 @@ import { ProductFilters } from "@/components/product-filters";
 import { ProductSorting } from "@/components/product-sorting";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { demoProducts } from "@/lib/products";
-import { initialFilters, type ProductFilters, sortOptions } from "@/lib/filters";
+import { shopifyClient } from "@/lib/shopify/client";
+import { Product } from "@/lib/products";
+import { initialFilters, type ProductFilters } from "@/lib/filters";
+import { categoryStore } from "@/lib/categories";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Grid3x3, List } from "lucide-react";
+import { Search, Grid3x3, List, RefreshCw } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -19,6 +21,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { QuickViewModal } from "@/components/quick-view-modal";
+
 
 export default function ProductsPage() {
   const { toast } = useToast();
@@ -27,11 +31,66 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+
   const productsPerPage = 12;
 
-  // Filter and sort products
+  // Fetch products from Shopify
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Update categories when products change
+  useEffect(() => {
+    if (products.length > 0) {
+      categoryStore.updateFromProducts(products);
+    }
+  }, [products]);
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const sortMap: Record<string, { sortKey: string; reverse?: boolean }> = {
+        'featured': { sortKey: 'BEST_SELLING' },
+        'newest': { sortKey: 'CREATED_AT', reverse: true },
+        'price-asc': { sortKey: 'PRICE' },
+        'price-desc': { sortKey: 'PRICE', reverse: true },
+        'rating-desc': { sortKey: 'RELEVANCE' },
+        'name-asc': { sortKey: 'TITLE' },
+        'name-desc': { sortKey: 'TITLE', reverse: true },
+      };
+
+      const sortOptions = sortMap[sortBy] || { sortKey: 'BEST_SELLING' };
+      
+      const shopifyProducts = await shopifyClient.getTransformedProducts({
+        first: 100,
+        query: searchQuery || undefined,
+        ...sortOptions,
+      });
+
+      setProducts(shopifyProducts);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('Failed to load products. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to load products from Shopify",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filter products client-side
   const filteredProducts = useMemo(() => {
-    let result = [...demoProducts];
+    let result = [...products];
 
     // Apply search
     if (searchQuery) {
@@ -39,7 +98,7 @@ export default function ProductsPage() {
       result = result.filter(
         (product) =>
           product.name.toLowerCase().includes(query) ||
-          product.description.toLowerCase().includes(query) ||
+          product.description?.toLowerCase().includes(query) ||
           product.category.toLowerCase().includes(query) ||
           product.tags.some((tag) => tag.toLowerCase().includes(query))
       );
@@ -76,32 +135,8 @@ export default function ProductsPage() {
       );
     }
 
-    // Apply sorting
-    switch (sortBy) {
-      case "price-asc":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating-desc":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case "name-asc":
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "name-desc":
-        result.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case "newest":
-        // Assuming newer products have higher IDs
-        result.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-        break;
-      // "featured" is default order
-    }
-
     return result;
-  }, [demoProducts, filters, sortBy, searchQuery]);
+  }, [products, filters, searchQuery]);
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
@@ -111,18 +146,15 @@ export default function ProductsPage() {
     startIndex + productsPerPage
   );
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Product) => {
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart`,
     });
   };
-
-  const handleQuickView = (product: any) => {
-    toast({
-      title: "Quick View",
-      description: `Viewing ${product.name}`,
-    });
+  
+  const handleQuickView = (product: Product) => {
+    setQuickViewProduct(product);
   };
 
   const handleResetFilters = () => {
@@ -131,18 +163,34 @@ export default function ProductsPage() {
     setCurrentPage(1);
   };
 
+  const handleRefresh = () => {
+    fetchProducts();
+  };
+
   useEffect(() => {
-    // Reset to first page when filters change
     setCurrentPage(1);
   }, [filters, sortBy, searchQuery]);
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="text-red-500 mb-4">{error}</div>
+        <Button onClick={fetchProducts} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   return (
+    <>
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold">Products</h1>
         <p className="mt-2 text-muted-foreground">
-          Browse our collection of premium products
+          Browse our collection of premium products from Shopify
         </p>
       </div>
 
@@ -156,6 +204,7 @@ export default function ProductsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              onKeyPress={(e) => e.key === 'Enter' && fetchProducts()}
             />
           </div>
           
@@ -175,6 +224,14 @@ export default function ProductsPage() {
               >
                 <List className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
             
             <ProductSorting value={sortBy} onValueChange={setSortBy} />
@@ -183,10 +240,13 @@ export default function ProductsPage() {
 
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div>
-            Showing {startIndex + 1}-{Math.min(startIndex + productsPerPage, filteredProducts.length)} of{" "}
-            {filteredProducts.length} products
+            {isLoading ? (
+              "Loading products..."
+            ) : (
+              `Showing ${startIndex + 1}-${Math.min(startIndex + productsPerPage, filteredProducts.length)} of ${filteredProducts.length} products`
+            )}
           </div>
-          {filteredProducts.length < demoProducts.length && (
+          {filteredProducts.length < products.length && (
             <Button
               variant="link"
               className="h-auto p-0"
@@ -210,7 +270,17 @@ export default function ProductsPage() {
 
         {/* Products Grid */}
         <div className="lg:col-span-3">
-          {paginatedProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : paginatedProducts.length === 0 ? (
             <div className="py-16 text-center">
               <h3 className="mb-2 text-xl font-semibold">No products found</h3>
               <p className="text-muted-foreground">
@@ -322,5 +392,14 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
+    
+    {/* Quick View Modal */}
+      <QuickViewModal
+        product={quickViewProduct}
+        open={!!quickViewProduct}
+        onOpenChange={(open) => !open && setQuickViewProduct(null)}
+        onAddToCart={handleAddToCart}
+      />
+    </>
   );
 }

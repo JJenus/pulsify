@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -21,13 +21,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  categoryOptions,
-  ratingOptions,
-  tagOptions,
-  type ProductFilters,
-  type PriceRange,
-} from "@/lib/filters";
+import { useCategoryStore } from "@/store/category-store";
+import { ratingOptions } from "@/lib/filters";
+import type { ProductFilters, PriceRange } from "@/lib/filters";
 
 interface ProductFiltersProps {
   filters: ProductFilters;
@@ -40,6 +36,8 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
     filters.priceRange.min,
     filters.priceRange.max,
   ]);
+  
+  const { categories, tags, hasCategories, isLoading } = useCategoryStore();
 
   const updateFilter = <K extends keyof ProductFilters>(
     key: K,
@@ -101,14 +99,18 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
             <SheetHeader>
               <SheetTitle>Filters</SheetTitle>
             </SheetHeader>
-            <div className="mt-6">
-              <FiltersContent
+            <div className="mt-6 space-y-6">
+              {/* Mobile Filters */}
+              <MobileFiltersContent
                 filters={filters}
+                categories={categories}
+                tags={tags}
+                hasCategories={hasCategories}
                 priceRange={priceRange}
-                onPriceChange={handlePriceChange}
                 onToggleCategory={toggleCategory}
                 onToggleTag={toggleTag}
                 onToggleRating={toggleRating}
+                onPriceChange={handlePriceChange}
                 onInStockChange={(checked) => updateFilter("inStock", checked)}
                 onReset={onReset}
               />
@@ -119,194 +121,109 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
 
       {/* Desktop Filters */}
       <div className="hidden lg:block">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Filters</h3>
           {activeFilterCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onReset}
-              className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
+              className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50"
             >
-              Clear all
+              <X className="mr-1 h-3 w-3" />
+              Clear All
             </Button>
           )}
         </div>
-        
-        <FiltersContent
+
+        <DesktopFiltersContent
           filters={filters}
+          categories={categories}
+          tags={tags}
+          hasCategories={hasCategories}
           priceRange={priceRange}
-          onPriceChange={handlePriceChange}
           onToggleCategory={toggleCategory}
           onToggleTag={toggleTag}
           onToggleRating={toggleRating}
+          onPriceChange={handlePriceChange}
           onInStockChange={(checked) => updateFilter("inStock", checked)}
           onReset={onReset}
         />
       </div>
-
-      {/* Active Filters */}
-      {activeFilterCount > 0 && (
-        <div className="space-y-2">
-          <div className="text-sm font-medium">Active Filters:</div>
-          <div className="flex flex-wrap gap-2">
-            {filters.categories.map((category) => (
-              <Badge key={category} variant="secondary" className="gap-1">
-                {category}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => toggleCategory(category)}
-                />
-              </Badge>
-            ))}
-            {filters.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="gap-1">
-                {tag}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => toggleTag(tag)}
-                />
-              </Badge>
-            ))}
-            {filters.ratings.map((rating) => (
-              <Badge key={rating} variant="secondary" className="gap-1">
-                {rating}★ & up
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => toggleRating(rating)}
-                />
-              </Badge>
-            ))}
-            {filters.inStock && (
-              <Badge variant="secondary" className="gap-1">
-                In Stock
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => updateFilter("inStock", false)}
-                />
-              </Badge>
-            )}
-            {(filters.priceRange.min > 0 || filters.priceRange.max < 1000) && (
-              <Badge variant="secondary" className="gap-1">
-                ${filters.priceRange.min} - ${filters.priceRange.max}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => {
-                    updateFilter("priceRange", { min: 0, max: 1000 });
-                    setPriceRange([0, 1000]);
-                  }}
-                />
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-interface FiltersContentProps {
-  filters: ProductFilters;
-  priceRange: [number, number];
-  onPriceChange: (value: number[]) => void;
-  onToggleCategory: (category: string) => void;
-  onToggleTag: (tag: string) => void;
-  onToggleRating: (rating: number) => void;
-  onInStockChange: (checked: boolean) => void;
-  onReset: () => void;
-}
-
-function FiltersContent({
+// Mobile Filters Component
+function MobileFiltersContent({
   filters,
+  categories,
+  tags,
+  hasCategories,
   priceRange,
-  onPriceChange,
   onToggleCategory,
   onToggleTag,
   onToggleRating,
+  onPriceChange,
   onInStockChange,
   onReset,
-}: FiltersContentProps) {
+}: any) {
   return (
-    <Accordion type="multiple" defaultValue={["price", "categories", "ratings"]}>
+    <Accordion type="multiple" className="w-full">
+      {/* Categories */}
+      <AccordionItem value="categories">
+        <AccordionTrigger>Categories</AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+            {!hasCategories ? (
+              <p className="text-sm text-muted-foreground">No categories available</p>
+            ) : categories.length === 0 ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+            ) : (
+              categories.map((category: any) => (
+                <div key={category.handle} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`mobile-cat-${category.handle}`}
+                    checked={filters.categories.includes(category.name)}
+                    onCheckedChange={() => onToggleCategory(category.name)}
+                  />
+                  <Label
+                    htmlFor={`mobile-cat-${category.handle}`}
+                    className="text-sm font-normal cursor-pointer flex-1 flex justify-between"
+                  >
+                    <span>{category.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({category.productCount})
+                    </span>
+                  </Label>
+                </div>
+              ))
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
       {/* Price Range */}
       <AccordionItem value="price">
         <AccordionTrigger>Price Range</AccordionTrigger>
         <AccordionContent>
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">${priceRange[0]}</span>
+              <span className="text-sm">${priceRange[1]}</span>
+            </div>
             <Slider
-              defaultValue={[0, 1000]}
               value={priceRange}
+              min={0}
               max={1000}
               step={10}
               onValueChange={onPriceChange}
-              className="my-6"
+              className="my-4"
             />
-            <div className="flex items-center justify-between text-sm">
-              <span>${priceRange[0]}</span>
-              <span>${priceRange[1]}</span>
-            </div>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Categories */}
-      <AccordionItem value="categories">
-        <AccordionTrigger>Categories</AccordionTrigger>
-        <AccordionContent>
-          <div className="space-y-3">
-            {categoryOptions.map((category) => (
-              <div key={category.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`category-${category.id}`}
-                    checked={filters.categories.includes(category.value)}
-                    onCheckedChange={() => onToggleCategory(category.value)}
-                  />
-                  <Label
-                    htmlFor={`category-${category.id}`}
-                    className="cursor-pointer"
-                  >
-                    {category.label}
-                  </Label>
-                </div>
-                {category.count && (
-                  <span className="text-sm text-muted-foreground">
-                    {category.count}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Ratings */}
-      <AccordionItem value="ratings">
-        <AccordionTrigger>Customer Ratings</AccordionTrigger>
-        <AccordionContent>
-          <div className="space-y-3">
-            {ratingOptions.map((rating) => (
-              <div key={rating.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`rating-${rating.id}`}
-                    checked={filters.ratings.includes(Number(rating.value))}
-                    onCheckedChange={() => onToggleRating(Number(rating.value))}
-                  />
-                  <Label
-                    htmlFor={`rating-${rating.id}`}
-                    className="cursor-pointer flex items-center gap-1"
-                  >
-                    <span className="text-yellow-500">{rating.label}</span>
-                  </Label>
-                </div>
-                {rating.count && (
-                  <span className="text-sm text-muted-foreground">
-                    {rating.count}
-                  </span>
-                )}
-              </div>
-            ))}
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -315,59 +232,216 @@ function FiltersContent({
       <AccordionItem value="tags">
         <AccordionTrigger>Tags</AccordionTrigger>
         <AccordionContent>
-          <div className="space-y-3">
-            {tagOptions.map((tag) => (
-              <div key={tag.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+            {tags.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tags available</p>
+            ) : (
+              tags.map((tag: any) => (
+                <div key={tag.value} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`tag-${tag.id}`}
-                    checked={filters.tags.includes(tag.value)}
-                    onCheckedChange={() => onToggleTag(tag.value)}
+                    id={`mobile-tag-${tag.value}`}
+                    checked={filters.tags.includes(tag.name.toLowerCase())}
+                    onCheckedChange={() => onToggleTag(tag.name.toLowerCase())}
                   />
                   <Label
-                    htmlFor={`tag-${tag.id}`}
-                    className="cursor-pointer"
+                    htmlFor={`mobile-tag-${tag.value}`}
+                    className="text-sm font-normal cursor-pointer flex-1 flex justify-between"
                   >
-                    {tag.label}
+                    <span>{tag.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({tag.count})
+                    </span>
                   </Label>
                 </div>
-                {tag.count && (
-                  <span className="text-sm text-muted-foreground">
-                    {tag.count}
-                  </span>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </AccordionContent>
       </AccordionItem>
 
-      {/* Availability */}
-      <AccordionItem value="availability">
+      {/* In Stock */}
+      <AccordionItem value="stock">
         <AccordionTrigger>Availability</AccordionTrigger>
         <AccordionContent>
           <div className="flex items-center space-x-2">
             <Checkbox
-              id="in-stock"
+              id="mobile-stock"
               checked={filters.inStock}
               onCheckedChange={onInStockChange}
             />
-            <Label htmlFor="in-stock" className="cursor-pointer">
+            <Label htmlFor="mobile-stock" className="text-sm font-normal">
               In Stock Only
             </Label>
           </div>
         </AccordionContent>
       </AccordionItem>
 
-      <Separator className="my-4" />
-      
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={onReset}
-      >
-        Reset All Filters
-      </Button>
+      {/* Ratings */}
+      <AccordionItem value="ratings">
+        <AccordionTrigger>Rating</AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-3">
+            {ratingOptions.map((rating) => (
+              <div key={rating.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`mobile-rating-${rating.id}`}
+                  checked={filters.ratings.includes(parseInt(rating.value))}
+                  onCheckedChange={() => onToggleRating(parseInt(rating.value))}
+                />
+                <Label
+                  htmlFor={`mobile-rating-${rating.id}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {rating.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
     </Accordion>
+  );
+}
+
+// Desktop Filters Component
+function DesktopFiltersContent({
+  filters,
+  categories,
+  tags,
+  hasCategories,
+  priceRange,
+  onToggleCategory,
+  onToggleTag,
+  onToggleRating,
+  onPriceChange,
+  onInStockChange,
+  onReset,
+}: any) {
+  return (
+    <div className="space-y-6">
+      {/* Categories */}
+      <div>
+        <h4 className="mb-3 font-medium">Categories</h4>
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+          {!hasCategories ? (
+            <p className="text-sm text-muted-foreground">No categories available</p>
+          ) : categories.length === 0 ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-6 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+          ) : (
+            categories.map((category: any) => (
+              <div key={category.handle} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`cat-${category.handle}`}
+                  checked={filters.categories.includes(category.name)}
+                  onCheckedChange={() => onToggleCategory(category.name)}
+                />
+                <Label
+                  htmlFor={`cat-${category.handle}`}
+                  className="text-sm font-normal cursor-pointer flex-1 flex justify-between"
+                >
+                  <span>{category.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({category.productCount})
+                  </span>
+                </Label>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Price Range */}
+      <div>
+        <h4 className="mb-3 font-medium">Price Range</h4>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">${priceRange[0]}</span>
+            <span className="text-sm">${priceRange[1]}</span>
+          </div>
+          <Slider
+            value={priceRange}
+            min={0}
+            max={1000}
+            step={10}
+            onValueChange={onPriceChange}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Tags */}
+      <div>
+        <h4 className="mb-3 font-medium">Tags</h4>
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+          {tags.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No tags available</p>
+          ) : (
+            tags.map((tag: any) => (
+              <div key={tag.value} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`tag-${tag.value}`}
+                  checked={filters.tags.includes(tag.name.toLowerCase())}
+                  onCheckedChange={() => onToggleTag(tag.name.toLowerCase())}
+                />
+                <Label
+                  htmlFor={`tag-${tag.value}`}
+                  className="text-sm font-normal cursor-pointer flex-1 flex justify-between"
+                >
+                  <span>{tag.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({tag.count})
+                  </span>
+                </Label>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* In Stock */}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="stock"
+          checked={filters.inStock}
+          onCheckedChange={onInStockChange}
+        />
+        <Label htmlFor="stock" className="text-sm font-normal cursor-pointer">
+          In Stock Only
+        </Label>
+      </div>
+
+      <Separator />
+
+      {/* Ratings */}
+      <div>
+        <h4 className="mb-3 font-medium">Rating</h4>
+        <div className="space-y-2">
+          {ratingOptions.map((rating) => (
+            <div key={rating.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={`rating-${rating.id}`}
+                checked={filters.ratings.includes(parseInt(rating.value))}
+                onCheckedChange={() => onToggleRating(parseInt(rating.value))}
+              />
+              <Label
+                htmlFor={`rating-${rating.id}`}
+                className="text-sm font-normal cursor-pointer"
+              >
+                {rating.label}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

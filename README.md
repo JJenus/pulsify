@@ -1,4 +1,4 @@
-# ShopPro - Modern E-commerce Store
+# Pulsify - Modern E-commerce Store
 
 A modern Shopify-like e-commerce store built with Next.js 14, TypeScript, and shadcn/ui (Radix UI).
 
@@ -14,3 +14,4 @@ A modern Shopify-like e-commerce store built with Next.js 14, TypeScript, and sh
 
 ## Project Structure
 
+pnpm add @shopify/hydrogen-react @shopify/storefront-kit graphql

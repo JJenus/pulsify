@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { notFound } from "next/navigation";
-import { useParams } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductVariants } from "@/components/product-variants";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   ShoppingCart, 
   Heart, 
@@ -24,10 +22,12 @@ import {
   ChevronRight,
   Package,
   CreditCard,
-  Clock
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { demoProducts, type Product, type ProductVariant } from "@/lib/products";
+import { shopifyClient } from "@/lib/shopify/client";
+import { Product, ProductVariant } from "@/lib/products";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -38,20 +38,40 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("description");
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const productId = params.id as string;
-    const foundProduct = demoProducts.find(p => p.id === productId);
-    
-    if (foundProduct) {
-      setProduct(foundProduct);
-      if (foundProduct.variants && foundProduct.variants.length > 0) {
-        setSelectedVariant(foundProduct.variants[0]);
-      }
-    }
-    
-    setIsLoading(false);
+    const productHandle = params.id as string;
+    fetchProduct(productHandle);
   }, [params.id]);
+
+  const fetchProduct = async (handle: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const shopifyProduct = await shopifyClient.getTransformedProductByHandle(handle);
+      
+      if (!shopifyProduct) {
+        notFound();
+      }
+      
+      setProduct(shopifyProduct);
+      if (shopifyProduct.variants && shopifyProduct.variants.length > 0) {
+        setSelectedVariant(shopifyProduct.variants[0]);
+      }
+    } catch (err) {
+      console.error('Error fetching product:', err);
+      setError('Failed to load product. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to load product from Shopify",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -64,6 +84,9 @@ export default function ProductDetailPage() {
       title: "Added to cart",
       description: `${quantity} × ${product.name}${selectedVariant ? ` (${selectedVariant.name})` : ''} added to cart`,
     });
+    
+    // TODO: Implement Shopify cart integration
+    console.log('Add to Shopify cart:', itemToAdd);
   };
 
   const handleWishlist = () => {
@@ -96,8 +119,32 @@ export default function ProductDetailPage() {
 
   if (isLoading) {
     return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="animate-pulse">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="aspect-square bg-gray-200 rounded-lg"></div>
+            <div className="space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-20 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-muted-foreground">Loading product...</div>
+        <div className="text-red-500 mb-4 flex items-center justify-center gap-2">
+          <AlertCircle className="h-5 w-5" />
+          {error}
+        </div>
+        <Button onClick={() => fetchProduct(params.id as string)} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -129,71 +176,80 @@ export default function ProductDetailPage() {
 
         {/* Right Column - Product Info */}
         <div>
-          {/* Product Header */}
-          <div className="mb-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Badge variant="secondary">{product.category}</Badge>
-              {product.tags.map((tag) => (
-                <Badge key={tag} variant="outline">
-                  {tag}
-                </Badge>
+          {/* Category and Tags */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-sm">
+              {product.category}
+            </Badge>
+            {product.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {!product.inStock && (
+              <Badge variant="destructive" className="text-xs">
+                Out of Stock
+              </Badge>
+            )}
+            {product.originalPrice && product.originalPrice > product.price && (
+              <Badge className="bg-red-500 text-xs">
+                Sale
+              </Badge>
+            )}
+          </div>
+
+          {/* Title */}
+          <h1 className="mb-2 text-3xl font-bold">{product.name}</h1>
+
+          {/* Rating */}
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < Math.floor(product.rating)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "fill-muted text-muted"
+                  }`}
+                />
               ))}
-              {!product.inStock && (
-                <Badge variant="destructive">Out of Stock</Badge>
-              )}
             </div>
-            
-            <h1 className="mb-2 text-3xl font-bold">{product.name}</h1>
-            
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${
-                      i < Math.floor(product.rating)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "fill-muted text-muted"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-muted-foreground">
-                {product.rating.toFixed(1)} ({product.reviewCount} reviews)
-              </span>
-            </div>
+            <span className="text-sm text-muted-foreground">
+              {product.rating.toFixed(1)} ({product.reviewCount} reviews)
+            </span>
           </div>
 
           {/* Price */}
           <div className="mb-6">
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold">
-                ${selectedVariant?.price.toFixed(2) || product.price.toFixed(2)}
+                ${product.price.toFixed(2)}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
                 <>
-                  <span className="text-xl text-muted-foreground line-through">
+                  <span className="text-lg text-muted-foreground line-through">
                     ${product.originalPrice.toFixed(2)}
                   </span>
-                  <Badge className="bg-green-500 hover:bg-green-600">
+                  <Badge className="bg-red-500">
                     Save ${(product.originalPrice - product.price).toFixed(2)}
                   </Badge>
                 </>
               )}
             </div>
-            {selectedVariant && selectedVariant.price !== product.price && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Base price: ${product.price.toFixed(2)}
-              </p>
-            )}
+            <p className="mt-1 text-sm text-muted-foreground">
+              {product.inStock ? "In stock" : "Out of stock"}
+            </p>
           </div>
 
           {/* Description */}
-          <p className="mb-6 text-muted-foreground">{product.description}</p>
+          <div className="mb-6">
+            <p className="text-muted-foreground">{product.description}</p>
+          </div>
 
           {/* Variants */}
           {product.variants && product.variants.length > 0 && (
-            <div className="mb-8">
+            <div className="mb-6">
               <ProductVariants
                 variants={product.variants}
                 selectedVariant={selectedVariant}
@@ -202,14 +258,14 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Quantity and Add to Cart */}
+          {/* Quantity & Add to Cart */}
           <div className="mb-8 space-y-4">
             <div className="flex items-center gap-4">
               <div>
-                <Label htmlFor="quantity" className="mb-2 block">
+                <Label htmlFor="quantity" className="mb-2 block text-sm">
                   Quantity
                 </Label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   <Button
                     variant="outline"
                     size="icon"
@@ -222,249 +278,115 @@ export default function ProductDetailPage() {
                     id="quantity"
                     type="number"
                     min="1"
-                    max="99"
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 text-center"
+                    className="mx-2 w-16 text-center"
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity(quantity + 1)}
-                    disabled={quantity >= 99}
                   >
                     +
                   </Button>
                 </div>
               </div>
-              
               <div className="flex-1">
-                <Label className="mb-2 block opacity-0">Actions</Label>
-                <div className="flex gap-2">
-                  <Button
-                    size="lg"
-                    className="flex-1"
-                    onClick={handleAddToCart}
-                    disabled={!product.inStock || (selectedVariant && !selectedVariant.inStock)}
-                  >
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    Add to Cart
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleWishlist}
-                    className="h-12 w-12"
-                  >
-                    <Heart className={`h-5 w-5 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleShare}
-                    className="h-12 w-12"
-                  >
-                    <Share2 className="h-5 w-5" />
-                  </Button>
-                </div>
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleAddToCart}
+                  disabled={!product.inStock}
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  {product.inStock ? "Add to Cart" : "Out of Stock"}
+                </Button>
               </div>
             </div>
-            
-            {/* Stock Status */}
-            <div className="rounded-lg bg-muted p-4">
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${product.inStock ? "bg-green-500" : "bg-destructive"}`} />
-                <span className={product.inStock ? "text-green-600" : "text-destructive"}>
-                  {product.inStock ? "In Stock" : "Out of Stock"}
-                </span>
-                {product.inStock && (
-                  <span className="text-sm text-muted-foreground">
-                    • Usually ships within 24 hours
-                  </span>
-                )}
-              </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleWishlist}
+              >
+                <Heart className={`mr-2 h-4 w-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+                {isWishlisted ? "Remove" : "Wishlist"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                Share
+              </Button>
             </div>
           </div>
 
-          {/* Features & Benefits */}
+          {/* Features & Shipping */}
           <div className="mb-8 grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <Truck className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <Truck className="h-6 w-6 text-primary" />
               <div>
-                <div className="font-medium">Free Shipping</div>
-                <div className="text-sm text-muted-foreground">On orders over $50</div>
+                <p className="font-medium">Free Shipping</p>
+                <p className="text-sm text-muted-foreground">Over $50</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <Shield className="h-6 w-6 text-primary" />
               <div>
-                <div className="font-medium">2-Year Warranty</div>
-                <div className="text-sm text-muted-foreground">Guaranteed quality</div>
+                <p className="font-medium">2-Year Warranty</p>
+                <p className="text-sm text-muted-foreground">Guaranteed</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <RefreshCw className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <Package className="h-6 w-6 text-primary" />
               <div>
-                <div className="font-medium">30-Day Returns</div>
-                <div className="text-sm text-muted-foreground">Easy returns</div>
+                <p className="font-medium">Easy Returns</p>
+                <p className="text-sm text-muted-foreground">30 Days</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <CreditCard className="h-6 w-6 text-primary" />
               <div>
-                <div className="font-medium">Secure Payment</div>
-                <div className="text-sm text-muted-foreground">100% secure</div>
+                <p className="font-medium">Secure Payment</p>
+                <p className="text-sm text-muted-foreground">SSL Protected</p>
               </div>
             </div>
           </div>
 
-          {/* Product Details Tabs */}
+          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="description">Description</TabsTrigger>
+              <TabsTrigger value="features">Features</TabsTrigger>
               <TabsTrigger value="specs">Specifications</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              <TabsTrigger value="shipping">Shipping</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="description" className="space-y-4 pt-4">
-              <p>{product.description}</p>
-              
-              {product.features && product.features.length > 0 && (
-                <div>
-                  <h4 className="mb-2 font-semibold">Key Features:</h4>
-                  <ul className="list-inside list-disc space-y-1">
-                    {product.features.map((feature, index) => (
-                      <li key={index} className="text-muted-foreground">
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            <TabsContent value="description" className="mt-4">
+              <p className="text-muted-foreground">{product.description}</p>
             </TabsContent>
-            
-            <TabsContent value="specs" className="pt-4">
-              <div className="space-y-3">
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium">{product.category}</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Material</span>
-                  <span className="font-medium">Premium Quality</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Dimensions</span>
-                  <span className="font-medium">Various sizes available</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Weight</span>
-                  <span className="font-medium">Lightweight</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Care Instructions</span>
-                  <span className="font-medium">Machine washable</span>
-                </div>
-              </div>
+            <TabsContent value="features" className="mt-4">
+              <ul className="list-inside list-disc space-y-2">
+                {product.features.map((feature, index) => (
+                  <li key={index} className="text-muted-foreground">
+                    {feature}
+                  </li>
+                ))}
+              </ul>
             </TabsContent>
-            
-            <TabsContent value="reviews" className="pt-4">
-              <div className="text-center text-muted-foreground">
-                Reviews functionality coming soon
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="shipping" className="pt-4">
-              <Accordion type="single" collapsible>
-                <AccordionItem value="delivery">
-                  <AccordionTrigger>Delivery Options</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Truck className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">Standard Shipping</div>
-                            <div className="text-sm text-muted-foreground">3-5 business days</div>
-                          </div>
-                        </div>
-                        <div className="font-medium">$4.99</div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">Express Shipping</div>
-                            <div className="text-sm text-muted-foreground">1-2 business days</div>
-                          </div>
-                        </div>
-                        <div className="font-medium">$9.99</div>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem value="returns">
-                  <AccordionTrigger>Returns & Exchanges</AccordionTrigger>
-                  <AccordionContent>
-                    <p className="text-muted-foreground">
-                      We offer a 30-day return policy. Items must be in original condition with tags attached.
-                      Return shipping is free for defective items.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
+            <TabsContent value="specs" className="mt-4">
+              <Accordion type="single" collapsible className="w-full">
+                {product.specifications && Object.entries(product.specifications).map(([key, value], index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger>{key}</AccordionTrigger>
+                    <AccordionContent>{value}</AccordionContent>
+                  </AccordionItem>
+                ))}
               </Accordion>
             </TabsContent>
           </Tabs>
-
-          {/* Payment Methods */}
-          <div className="rounded-lg border p-4">
-            <div className="mb-2 text-sm font-medium">Payment Methods</div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                We accept: Visa, MasterCard, American Express, PayPal, Apple Pay
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Related Products Section */}
-      <Separator className="my-12" />
-      
-      <div>
-        <h2 className="mb-6 text-2xl font-bold">You May Also Like</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {demoProducts
-            .filter(p => p.id !== product.id && p.category === product.category)
-            .slice(0, 4)
-            .map((relatedProduct) => (
-              <div
-                key={relatedProduct.id}
-                className="cursor-pointer rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                onClick={() => window.location.href = `/products/${relatedProduct.id}`}
-              >
-                <div className="mb-3 aspect-square overflow-hidden rounded-md bg-gray-100">
-                  <img
-                    src={relatedProduct.images[0]}
-                    alt={relatedProduct.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <h3 className="font-medium">{relatedProduct.name}</h3>
-                <div className="mt-1 flex items-center justify-between">
-                  <span className="font-bold">${relatedProduct.price.toFixed(2)}</span>
-                  {relatedProduct.originalPrice && (
-                    <span className="text-sm text-muted-foreground line-through">
-                      ${relatedProduct.originalPrice.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
         </div>
       </div>
     </div>

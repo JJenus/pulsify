@@ -2,14 +2,15 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
-import { CartDrawer } from '@/components/cart-drawer';
-import { Button } from '@/components/ui/button';
-import { Search, User, Menu } from 'lucide-react';
+import { Header } from '@/components/header';
+import Link from 'next/link';
+import { CategoriesFooter } from '@/components/categories-footer';
+import { CategoryProvider } from '@/components/category-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ShopPro - Modern E-commerce Store',
+  title: 'Pulsify - Modern E-commerce Store',
   description: 'A modern e-commerce store built with Next.js and shadcn/ui',
 };
 
@@ -21,37 +22,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Header */}
-        <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto flex h-16 items-center justify-between px-4">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
-              <div className="text-2xl font-bold">ShopPro</div>
-            </div>
-            
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="#" className="font-medium hover:text-primary transition-colors">Home</a>
-              <a href="/products" className="font-medium hover:text-primary transition-colors">Products</a>
-              <a href="#" className="font-medium hover:text-primary transition-colors">Categories</a>
-              <a href="#" className="font-medium hover:text-primary transition-colors">Sale</a>
-              <a href="#" className="font-medium hover:text-primary transition-colors">About</a>
-            </nav>
-            
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon">
-                <Search className="h-5 w-5" />
-              </Button>
-              
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
-              
-              <CartDrawer />
-            </div>
-          </div>
-        </header>
+
+        <Header />
         
         <main className="flex-1">
           {children}
@@ -62,7 +34,7 @@ export default function RootLayout({
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
               <div>
-                <h3 className="mb-4 text-lg font-bold">ShopPro</h3>
+                <h3 className="mb-4 text-lg font-bold">Pulsify</h3>
                 <p className="text-sm text-muted-foreground">
                   Your one-stop shop for premium products and exceptional service.
                 </p>
@@ -71,36 +43,29 @@ export default function RootLayout({
               <div>
                 <h4 className="mb-4 font-semibold">Quick Links</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="#" className="hover:text-primary">Home</a></li>
-                  <li><a href="#" className="hover:text-primary">Shop</a></li>
-                  <li><a href="#" className="hover:text-primary">About</a></li>
-                  <li><a href="#" className="hover:text-primary">Contact</a></li>
+                  <li><Link href="/" className="hover:text-primary">Home</Link></li>
+                  <li><Link href="/products" className="hover:text-primary">Shop</Link></li>
+                  <li><Link href="/about" className="hover:text-primary">About</Link></li>
+                  <li><Link href="/contact" className="hover:text-primary">Contact</Link></li>
                 </ul>
               </div>
               
-              <div>
-                <h4 className="mb-4 font-semibold">Categories</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="#" className="hover:text-primary">Clothing</a></li>
-                  <li><a href="#" className="hover:text-primary">Electronics</a></li>
-                  <li><a href="#" className="hover:text-primary">Accessories</a></li>
-                  <li><a href="#" className="hover:text-primary">Home Goods</a></li>
-                </ul>
-              </div>
+              {/* Dynamic Categories Section */}
+              <CategoriesFooter />
               
               <div>
                 <h4 className="mb-4 font-semibold">Support</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="#" className="hover:text-primary">FAQ</a></li>
-                  <li><a href="#" className="hover:text-primary">Shipping</a></li>
-                  <li><a href="#" className="hover:text-primary">Returns</a></li>
-                  <li><a href="#" className="hover:text-primary">Privacy Policy</a></li>
+                  <li><Link href="/faq" className="hover:text-primary">FAQ</Link></li>
+                  <li><Link href="/shipping" className="hover:text-primary">Shipping</Link></li>
+                  <li><Link href="/returns" className="hover:text-primary">Returns</Link></li>
+                  <li><Link href="/privacy" className="hover:text-primary">Privacy Policy</Link></li>
                 </ul>
               </div>
             </div>
             
             <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-              <p>&copy; {new Date().getFullYear()} ShopPro. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Pulsify. All rights reserved.</p>
             </div>
           </div>
         </footer>

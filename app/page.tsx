@@ -3,18 +3,22 @@
 import { useState } from "react";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { FeaturedProducts } from "@/components/featured-products";
-import { QuickViewModal } from "@/components/quick-view-modal";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Truck, CreditCard, Headphones } from "lucide-react";
 import { Product } from "@/lib/products";
 import { useToast } from "@/hooks/use-toast";
+import { useCartStore, createCartItem } from "@/store/cart-store";
 
 export default function Home() {
   const { toast } = useToast();
+  const { addItem } = useCartStore();
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   const handleAddToCart = (product: Product) => {
+    const cartItem = createCartItem(product);
+    addItem(cartItem);
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart`,
@@ -77,7 +81,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
       <FeaturedProducts />
 
       {/* Newsletter Section */}
@@ -91,20 +94,12 @@ export default function Home() {
             <input
               type="email"
               placeholder="Enter your email"
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex-1 rounded-md border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
             <Button>Subscribe</Button>
           </div>
         </div>
       </section>
-
-      {/* Quick View Modal */}
-      <QuickViewModal
-        product={quickViewProduct}
-        open={!!quickViewProduct}
-        onOpenChange={(open) => !open && setQuickViewProduct(null)}
-        onAddToCart={handleAddToCart}
-      />
     </div>
   );
 }

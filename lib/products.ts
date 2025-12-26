@@ -13,6 +13,8 @@ export interface Product {
   features: string[];
   variants?: ProductVariant[];
   specifications?: Record<string, string>;
+  currencyCode?: string;
+  handle?: string;
 }
 
 export interface ProductVariant {
