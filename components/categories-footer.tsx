@@ -21,14 +21,14 @@ export function CategoriesFooter() {
       <h4 className="mb-4 font-semibold">Categories</h4>
       <ul className="space-y-2 text-sm text-muted-foreground">
         {categories.slice(0, 6).map((category) => (
-          <li key={category.value}>
+          <li key={category.name}>
             <Link 
-              href={`/products?category=${category.value}`}
+              href={`/products?category=${category.name}`}
               className="hover:text-primary flex items-center justify-between group"
             >
               <span className="group-hover:underline">{category.name}</span>
               <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
-                {category.count}
+                {category.productCount}
               </span>
             </Link>
           </li>

@@ -66,10 +66,10 @@ export class ShopifyClient {
           variables: variables || {}
         });
 
-        if (errors && errors.length > 0) {
+        if (errors) {
           console.error('GraphQL Errors:', errors);
-          const errorMessage = errors.map(e => e.message).join(', ');
-          throw new Error(`GraphQL query failed: ${errorMessage}`);
+          //const errorMessage = errors.map(e => e.message).join(', ');
+          throw new Error(`GraphQL query failed: ${"errorMessage"}`);
         }
 
         if (!data) {
@@ -99,10 +99,10 @@ export class ShopifyClient {
 
       const { data, errors } = await response.json();
 
-      if (errors && errors.length > 0) {
+      if (errors) {
         console.error('GraphQL Errors:', errors);
-        const errorMessage = errors.map(e => e.message).join(', ');
-        throw new Error(`GraphQL query failed: ${errorMessage}`);
+        //const errorMessage = errors.map(e => e.message).join(', ');
+        throw new Error(`GraphQL query failed: ${"errorMessage"}`);
       }
 
       if (!data) {

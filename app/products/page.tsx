@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { shopifyClient } from "@/lib/shopify/client";
 import { Product } from "@/lib/products";
-import { initialFilters, type ProductFilters } from "@/lib/filters";
+import { initialFilters, type ProductFilters as ProductFiltersType } from "@/lib/filters";
 import { categoryStore } from "@/lib/categories";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Grid3x3, List, RefreshCw } from "lucide-react";
@@ -23,10 +23,11 @@ import {
 } from "@/components/ui/pagination";
 import { QuickViewModal } from "@/components/quick-view-modal";
 
+import { useCartStore, createCartItem } from "@/store/cart-store";
 
 export default function ProductsPage() {
   const { toast } = useToast();
-  const [filters, setFilters] = useState<ProductFilters>(initialFilters);
+  const [filters, setFilters] = useState<ProductFiltersType>(initialFilters);
   const [sortBy, setSortBy] = useState("featured");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -36,6 +37,8 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  
+  const { addItem } = useCartStore();
 
   const productsPerPage = 12;
 
@@ -147,6 +150,9 @@ export default function ProductsPage() {
   );
 
   const handleAddToCart = (product: Product) => {
+    const cartItem = createCartItem(product); 
+    addItem(cartItem);
+    
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart`,
@@ -174,7 +180,7 @@ export default function ProductsPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <div className="text-red-500 mb-4">{error}</div>
+        <div className="text-red-500 mb-4"> {error} </div>
         <Button onClick={fetchProducts} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
           Retry
@@ -334,7 +340,7 @@ export default function ProductsPage() {
                       </PaginationItem>
 
                       {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                        let pageNum;
+                        let pageNum: number;
                         if (totalPages <= 5) {
                           pageNum = i + 1;
                         } else if (currentPage <= 3) {

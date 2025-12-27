@@ -26,6 +26,12 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
     e.preventDefault();
     e.stopPropagation();
     
+    if (onAddToCart) {
+      // Call the parent handler if provided
+      onAddToCart?.(product);
+      return;
+    }
+    
     const cartItem = createCartItem(product);
     addItem(cartItem);
     
@@ -42,9 +48,6 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
         </Button>
       ),
     });
-    
-    // Call the parent handler if provided
-    onAddToCart?.(product);
   };
 
   const handleQuickView = (e: React.MouseEvent) => {

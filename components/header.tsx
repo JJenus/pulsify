@@ -81,15 +81,15 @@ export function Header() {
                       <li className="text-sm text-muted-foreground">No categories</li>
                     ) : (
                       categories.slice(0, 6).map((category) => (
-                        <li key={category.value}>
+                        <li key={category.handle}>
                           <Link
-                            href={`/products?category=${category.value}`}
+                            href={`/products?category=${category.handle}`}
                             className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-accent hover:text-accent-foreground"
                             onClick={() => setIsMenuOpen(false)}
                           >
                             <span>{category.name}</span>
                             <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-0.5 rounded">
-                              {category.count}
+                              {category.productCount}
                             </span>
                           </Link>
                         </li>
@@ -129,13 +129,13 @@ export function Header() {
                   <div className="space-y-2">
                     {categories.slice(0, 8).map((category) => (
                       <Link
-                        key={category.value}
-                        href={`/products?category=${category.value}`}
+                        key={category.handle}
+                        href={`/products?category=${category.handle}`}
                         className="flex items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
                       >
                         <span>{category.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {category.count}
+                          {category.productCount}
                         </span>
                       </Link>
                     ))}

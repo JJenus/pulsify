@@ -129,4 +129,4 @@ export const createCartItem = (
     } : undefined,
     productHandle: product.handle,
   };
-};
+}; 

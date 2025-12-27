@@ -77,7 +77,7 @@ export function FeaturedProducts() {
   const categoryTabs = [
     { value: "all", label: "All" },
     ...topCategories.map(cat => ({
-      value: cat.value,
+      value: cat.handle,
       label: cat.name
     }))
   ];
@@ -102,7 +102,7 @@ export function FeaturedProducts() {
             </div>
             
             <div className="flex items-center gap-4">
-              <Tabs value={activeCategory} className="w-full md:w-auto">
+              <Tabs value={activeCategory} className="w-full md:w-auto"> 
                 <TabsList className="grid grid-cols-2 md:flex">
                   {categoryTabs.map((category) => (
                     <TabsTrigger

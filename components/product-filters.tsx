@@ -111,7 +111,7 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
                 onToggleTag={toggleTag}
                 onToggleRating={toggleRating}
                 onPriceChange={handlePriceChange}
-                onInStockChange={(checked) => updateFilter("inStock", checked)}
+                onInStockChange={(checked: any) => updateFilter("inStock", checked)}
                 onReset={onReset}
               />
             </div>
@@ -146,7 +146,7 @@ export function ProductFilters({ filters, onFiltersChange, onReset }: ProductFil
           onToggleTag={toggleTag}
           onToggleRating={toggleRating}
           onPriceChange={handlePriceChange}
-          onInStockChange={(checked) => updateFilter("inStock", checked)}
+          onInStockChange={(checked: any) => updateFilter("inStock", checked)}
           onReset={onReset}
         />
       </div>
