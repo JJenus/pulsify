@@ -12,6 +12,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useCheckout } from "@/hooks/use-checkout";
 
 export function CartDrawer() {
   const { toast } = useToast();
@@ -23,6 +24,7 @@ export function CartDrawer() {
     getItemCount, 
     getTotalPrice 
   } = useCartStore();
+  const { handleCheckout } = useCheckout();
   
   const [isOpen, setIsOpen] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
@@ -69,12 +71,11 @@ export function CartDrawer() {
     });
   };
 
-  const handleProceedToCheckout = () => {
-    toast({
-      title: "Proceeding to checkout",
-      description: "Redirecting to checkout...",
-    });
-    setIsOpen(false);
+  const handleProceedToCheckout = async () => {
+    const success = await handleCheckout();
+    if (success) {
+      setIsOpen(false);
+    }
   };
 
   const CartContent = () => (

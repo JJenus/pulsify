@@ -3,12 +3,14 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, ExternalLink, Eye, ShoppingCart, Check } from "lucide-react";
+import { Star, ExternalLink, Eye, ShoppingCart, Check, Loader2 } from "lucide-react";
 import { Product } from "@/lib/products";
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore, createCartItem } from "@/store/cart-store";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useCheckout } from "@/hooks/use-checkout"; // We'll need to create this
 
 interface ProductCardProps {
   product: Product;
@@ -19,6 +21,9 @@ interface ProductCardProps {
 export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardProps) {
   const { toast } = useToast();
   const { addItem, isInCart, getItem } = useCartStore();
+  const { handleCheckout } = useCheckout(); // Use the checkout hook
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
+  
   const cartItemId = product.id;
   const isAddedToCart = isInCart(product.id);
 
@@ -48,6 +53,39 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
         </Button>
       ),
     });
+  };
+
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsBuyNowLoading(true);
+    
+    try {
+      // First, add the item to cart
+      const cartItem = createCartItem(product);
+      addItem(cartItem);
+      
+      // Then immediately redirect to checkout
+      const success = await handleCheckout();
+      
+      if (!success) {
+        toast({
+          title: "Checkout failed",
+          description: "Unable to proceed to checkout. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Buy now error:', error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBuyNowLoading(false);
+    }
   };
 
   const handleQuickView = (e: React.MouseEvent) => {
@@ -272,9 +310,28 @@ export function ProductCard({ product, onAddToCart, onQuickView }: ProductCardPr
                 "Notify Me"
               )}
             </Button>
+            
+            {/* Buy Now Button */}
+            <Button
+              variant="secondary"
+              className="flex-1"
+              size="sm"
+              onClick={handleBuyNow}
+              disabled={!product.inStock || isBuyNowLoading}
+            >
+              {isBuyNowLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Buy Now"
+              )}
+            </Button>
+            
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 hidden"
               size="sm"
               onClick={(e) => {
                 e.preventDefault();

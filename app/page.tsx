@@ -38,8 +38,8 @@ export default function Home() {
 
       {/* Features Section */}
       <section className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="hidden">
             <CardContent className="flex flex-col items-center p-6 text-center">
               <Truck className="mb-4 h-12 w-12 text-primary" />
               <h3 className="mb-2 font-semibold">Free Shipping</h3>

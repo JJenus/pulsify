@@ -49,7 +49,7 @@ export function HeroCarousel() {
               <div className="absolute inset-0 z-0">
                 {/* Background image with overlay */}
                 <div 
-                  className="absolute inset-0 bg-cover bg-center opacity-20"
+                  className="absolute inset-0 bg-cover bg-center opacity-50"
                   style={{ backgroundImage: `url(${slide.image})` }}
                 />
               </div>
